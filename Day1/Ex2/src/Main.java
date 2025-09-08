@@ -1,15 +1,34 @@
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
     public static void main(String[] args) {
-        //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-        // to see how IntelliJ IDEA suggests fixing it.
-        System.out.printf("Hello and welcome!");
+        BankSystem bank = new BankSystem();
 
-        for (int i = 1; i <= 5; i++) {
-            //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-            // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-            System.out.println("i = " + i);
+        CheckingAccount ca = new CheckingAccount("CHK1001", 500);
+        SavingsAccount sa = new SavingsAccount("SAV2001", 0.05);
+
+        bank.addAccount(ca);
+        bank.addAccount(sa);
+
+        // Deposit / Withdraw
+        ca.deposit(1000);
+        ca.withdraw(200);
+
+        // Transfer
+        bank.transfer("CHK1001", "SAV2001", 300);
+
+        // Freeze account test
+        ca.freeze();
+        try {
+            ca.deposit(100);
+        } catch (Exception e) {
+            System.out.println("Expected error (frozen): " + e.getMessage());
         }
+        ca.unfreeze();
+        ca.deposit(100); // OK sau khi unfreeze
+
+        // Apply monthly interest to savings
+        bank.applyMonthlyInterest();
+
+        // Generate Statements
+        bank.generateAllStatements();
     }
 }

@@ -10,6 +10,7 @@ public class Member {
     private List<BorrowRecord> borrowHistory;
     private double outstandingFines;
     private int maxBooksAllowed;
+    private boolean active;
 
     public Member(String memberId, String name, String email, int maxBooksAllowed) {
         this.memberId = memberId;
@@ -19,22 +20,23 @@ public class Member {
         this.borrowHistory = new ArrayList<>();
         this.outstandingFines = 0.0;
         this.maxBooksAllowed = maxBooksAllowed;
+        this.active = true;
     }
 
-    // Borrowing rules
+    // Business rules
     public boolean canBorrow() {
-        long active = borrowHistory.stream().filter(r -> r.getStatus() == BorrowStatus.BORROWED).count();
-        return active < maxBooksAllowed && outstandingFines <= 50.0;
+        if (!active) return false;
+        long activeBorrows = borrowHistory.stream().filter(r -> r.getStatus() == BorrowStatus.BORROWED).count();
+        return activeBorrows < maxBooksAllowed && outstandingFines <= 50.0;
     }
 
-    // Fine management
+    public void addBorrowRecord(BorrowRecord rec) { borrowHistory.add(rec); }
     public void addFine(double fine) { outstandingFines += fine; }
     public void payFine(double amount) { outstandingFines = Math.max(0, outstandingFines - amount); }
+    public void deactivate() { active = false; }
+    public void activate() { active = true; }
 
-    // Borrowing
-    public void addBorrowRecord(BorrowRecord record) { borrowHistory.add(record); }
-
-    // Getters & setters
+    // Getters/Setters (đầy đủ)
     public String getMemberId() { return memberId; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -43,13 +45,17 @@ public class Member {
     public LocalDate getMembershipDate() { return membershipDate; }
     public void setMembershipDate(LocalDate membershipDate) { this.membershipDate = membershipDate; }
     public List<BorrowRecord> getBorrowHistory() { return borrowHistory; }
+    public void setBorrowHistory(List<BorrowRecord> borrowHistory) { this.borrowHistory = borrowHistory; }
     public double getOutstandingFines() { return outstandingFines; }
     public void setOutstandingFines(double outstandingFines) { this.outstandingFines = outstandingFines; }
     public int getMaxBooksAllowed() { return maxBooksAllowed; }
     public void setMaxBooksAllowed(int maxBooksAllowed) { this.maxBooksAllowed = maxBooksAllowed; }
+    public boolean isActive() { return active; }
+    public void setActive(boolean active) { this.active = active; }
 
     @Override
     public String toString() {
-        return String.format("Member[%s] %s | Fines: %.2f | Books: %d", memberId, name, outstandingFines, borrowHistory.size());
+        return "Member[" + memberId + "] " + name + " | fines=" + String.format("%.2f", outstandingFines)
+                + " | active=" + active + " | borrows=" + borrowHistory.size();
     }
 }

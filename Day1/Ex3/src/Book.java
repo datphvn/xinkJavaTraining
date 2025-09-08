@@ -8,9 +8,12 @@ public class Book {
     private int totalCopies;
     private int availableCopies;
     private LocalDate publishDate;
+    private BookFormat format;
 
-    public Book(String isbn, String title, String author, String category, int totalCopies, LocalDate publishDate) {
-        if (!isValidISBN(isbn)) throw new IllegalArgumentException("Invalid ISBN format");
+    public Book(String isbn, String title, String author, String category,
+                int totalCopies, LocalDate publishDate, BookFormat format) {
+        if (!isValidISBN(isbn)) throw new IllegalArgumentException("Invalid ISBN");
+        if (totalCopies < 0) throw new IllegalArgumentException("totalCopies >= 0");
         this.isbn = isbn;
         this.title = title;
         this.author = author;
@@ -18,34 +21,48 @@ public class Book {
         this.totalCopies = totalCopies;
         this.availableCopies = totalCopies;
         this.publishDate = publishDate;
+        this.format = format;
     }
 
-    // ISBN validation
-    private boolean isValidISBN(String isbn) {
-        return isbn != null && (isbn.matches("\\d{10}") || isbn.matches("\\d{13}"));
+    // ISBN-10/13 basic validation
+    private boolean isValidISBN(String s) {
+        return s != null && (s.matches("\\d{10}") || s.matches("\\d{13}"));
     }
 
     // Copy management
     public boolean borrowCopy() {
-        if (availableCopies > 0) {
-            availableCopies--;
-            return true;
-        }
+        if (format == BookFormat.DIGITAL) return true; // unlimited digital copies
+        if (availableCopies > 0) { availableCopies--; return true; }
         return false;
     }
 
     public void returnCopy() {
+        if (format == BookFormat.DIGITAL) return;
         if (availableCopies < totalCopies) availableCopies++;
     }
 
-    // Search
-    public boolean matches(String keyword) {
-        return title.toLowerCase().contains(keyword.toLowerCase()) ||
-                author.toLowerCase().contains(keyword.toLowerCase()) ||
-                category.toLowerCase().contains(keyword.toLowerCase());
+    public void addCopies(int n) {
+        if (format == BookFormat.DIGITAL) return;
+        if (n <= 0) throw new IllegalArgumentException("n > 0");
+        totalCopies += n;
+        availableCopies += n;
     }
 
-    // Getters & setters
+    public void removeCopies(int n) {
+        if (format == BookFormat.DIGITAL) return;
+        if (n <= 0) throw new IllegalArgumentException("n > 0");
+        if (n > availableCopies) throw new IllegalArgumentException("Cannot remove borrowed copies");
+        totalCopies -= n;
+        availableCopies -= n;
+    }
+
+    // Search helper
+    public boolean matches(String keyword) {
+        String k = keyword.toLowerCase();
+        return title.toLowerCase().contains(k) || author.toLowerCase().contains(k) || category.toLowerCase().contains(k) || isbn.contains(k);
+    }
+
+    // Getters/Setters (đầy đủ)
     public String getIsbn() { return isbn; }
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
@@ -59,9 +76,12 @@ public class Book {
     public void setAvailableCopies(int availableCopies) { this.availableCopies = availableCopies; }
     public LocalDate getPublishDate() { return publishDate; }
     public void setPublishDate(LocalDate publishDate) { this.publishDate = publishDate; }
+    public BookFormat getFormat() { return format; }
+    public void setFormat(BookFormat format) { this.format = format; }
 
     @Override
     public String toString() {
-        return String.format("[%s] %s by %s | %d/%d available", isbn, title, author, availableCopies, totalCopies);
+        return "[" + isbn + "] " + title + " by " + author + " | " + format +
+                " | " + availableCopies + "/" + totalCopies + " available";
     }
 }

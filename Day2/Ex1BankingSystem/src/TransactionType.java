@@ -1,0 +1,3 @@
+enum TransactionType {
+    DEPOSIT, WITHDRAWAL, INTEREST, OVERDRAFT_FEE, TRANSFER
+}

@@ -1,6 +1,9 @@
+import java.io.Serializable;
 import java.time.LocalDate;
 
-public class Enrollment {
+public class Enrollment implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private final Student student;
     private final Course course;
     private final LocalDate enrollmentDate;
@@ -13,6 +16,7 @@ public class Enrollment {
         this.course = course;
         this.enrollmentDate = LocalDate.now();
         this.status = EnrollmentStatus.ACTIVE;
+        this.grade = -1; // -1 means not graded yet
     }
 
     public void recordAttendance(int attended, int total) {
@@ -27,8 +31,22 @@ public class Enrollment {
         this.status = EnrollmentStatus.WITHDRAWN;
     }
 
-    // Getters
+    // Getters / Setters
     public double getGrade() { return grade; }
-    public void setGrade(double grade) { this.grade = grade; }
+    public void setGrade(double grade) {
+        this.grade = grade;
+    }
     public Course getCourse() { return course; }
+    public Student getStudent() { return student; }
+    public EnrollmentStatus getStatus() { return status; }
+    public void setStatus(EnrollmentStatus status) { this.status = status; }
+    public LocalDate getEnrollmentDate() { return enrollmentDate; }
+    public int getAttendancePercentage() { return attendancePercentage; }
+
+    @Override
+    public String toString() {
+        return String.format("Enrollment[%s->%s, status=%s, grade=%s]",
+                student.getStudentId(), course.getCourseCode(), status,
+                grade >= 0 ? String.valueOf(grade) : "N/A");
+    }
 }

@@ -1,0 +1,14 @@
+{
+  "errorRate" : 0.0,
+  "total" : 2,
+  "topMessages" : [ {
+    "GET /index.html HTTP/1.1 -> 200" : 1
+  }, {
+    "POST /api/order HTTP/1.1 -> 500" : 1
+  } ],
+  "avgResponseTime" : "NaN",
+  "errorCount" : 0,
+  "levels" : {
+    "INFO" : 2
+  }
+}

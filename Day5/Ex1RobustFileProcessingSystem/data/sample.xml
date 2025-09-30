@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<company name="DatPV Example Ltd">
+    <employees>
+        <employee id="1">
+            <name>Nguyen Van A</name>
+            <age>25</age>
+        </employee>
+        <employee id="2">
+            <name>Tran Thi B</name>
+            <age>30</age>
+        </employee>
+        <employee id="3">
+            <name>Le Van C</name>
+            <age>28</age>
+        </employee>
+    </employees>
+    <location>Hanoi</location>
+</company>

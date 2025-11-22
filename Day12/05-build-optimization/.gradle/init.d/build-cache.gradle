@@ -1,0 +1,21 @@
+gradle.settingsEvaluated { settings ->
+    settings.buildCache {
+        local {
+            enabled = true
+            directory = new File(settings.gradle.gradleUserHomeDir, 'caches/build-cache')
+            removeUnusedEntriesAfterDays = 30
+        }
+        
+        if (System.getenv('CI')) {
+            remote(HttpBuildCache) {
+                url = 'https://build-cache.company.com/'
+                credentials {
+                    username = System.getenv('BUILD_CACHE_USERNAME')
+                    password = System.getenv('BUILD_CACHE_PASSWORD')
+                }
+                push = System.getenv('CI_COMMIT_REF_NAME') == 'main'
+            }
+        }
+    }
+}
+

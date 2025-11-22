@@ -1,0 +1,202 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.2.0' apply false
+    id 'io.spring.dependency-management' version '1.1.4' apply false
+    id 'com.github.spotbugs' version '5.2.1' apply false
+    id 'jacoco'
+    id 'jacoco-report-aggregation'
+}
+
+// Common configuration for all projects
+allprojects {
+    group = 'com.company.training'
+    version = '1.0.0-SNAPSHOT'
+    
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+// Configuration for all subprojects
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'jacoco'
+    
+    java {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    
+    // Common dependencies
+    dependencies {
+        // Logging
+        implementation 'org.slf4j:slf4j-api'
+        
+        // Testing
+        testImplementation 'org.junit.jupiter:junit-jupiter'
+        testImplementation 'org.mockito:mockito-core'
+        testImplementation 'org.mockito:mockito-junit-jupiter'
+        testImplementation 'org.assertj:assertj-core'
+    }
+    
+    // Common test configuration
+    test {
+        useJUnitPlatform()
+        finalizedBy jacocoTestReport
+        
+        testLogging {
+            events 'passed', 'skipped', 'failed'
+        }
+    }
+    
+    jacocoTestReport {
+        dependsOn test
+        reports {
+            xml.required = true
+            html.required = true
+        }
+    }
+}
+
+// Project-specific configurations
+configure(project(':training-common')) {
+    description = 'Common utilities and shared code'
+    
+    dependencies {
+        api 'org.apache.commons:commons-lang3'
+        api 'com.fasterxml.jackson.core:jackson-databind'
+    }
+}
+
+configure(project(':training-domain')) {
+    description = 'Domain models and business logic'
+    
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+    
+    dependencies {
+        api project(':training-common')
+        implementation 'org.springframework.boot:spring-boot-starter'
+        implementation 'org.springframework.boot:spring-boot-starter-validation'
+    }
+}
+
+configure(project(':training-repository')) {
+    description = 'Data access layer'
+    
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+    
+    dependencies {
+        api project(':training-domain')
+        implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+        runtimeOnly 'com.h2database:h2'
+        runtimeOnly 'org.postgresql:postgresql'
+        
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        testImplementation 'org.testcontainers:junit-jupiter'
+        testImplementation 'org.testcontainers:postgresql'
+    }
+}
+
+configure(project(':training-service')) {
+    description = 'Business service layer'
+    
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+    
+    dependencies {
+        api project(':training-repository')
+        implementation 'org.springframework.boot:spring-boot-starter'
+        implementation 'org.springframework.boot:spring-boot-starter-cache'
+        
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    }
+}
+
+configure(project(':training-web')) {
+    description = 'Web layer and REST APIs'
+    
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+    
+    dependencies {
+        implementation project(':training-service')
+        implementation 'org.springframework.boot:spring-boot-starter-web'
+        implementation 'org.springframework.boot:spring-boot-starter-actuator'
+        implementation 'org.springframework.boot:spring-boot-starter-security'
+        
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        testImplementation 'org.springframework.security:spring-security-test'
+        testImplementation 'io.rest-assured:rest-assured'
+    }
+    
+    // Configure Spring Boot plugin
+    bootJar {
+        enabled = true
+        archiveClassifier = ''
+    }
+    
+    jar {
+        enabled = true
+        archiveClassifier = 'plain'
+    }
+}
+
+configure(project(':training-integration-tests')) {
+    description = 'Integration tests for the entire application'
+    
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+    
+    dependencies {
+        testImplementation project(':training-web')
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        testImplementation 'org.testcontainers:junit-jupiter'
+        testImplementation 'org.testcontainers:postgresql'
+        testImplementation 'io.rest-assured:rest-assured'
+    }
+    
+    // Only run tests, don't build jar
+    jar.enabled = false
+    bootJar.enabled = false
+    
+    test {
+        systemProperty 'spring.profiles.active', 'integration-test'
+    }
+}
+
+// Aggregate test reports
+reporting {
+    reports {
+        testCodeCoverageReport(JacocoCoverageReport) {
+            testType = TestSuiteType.UNIT_TEST
+        }
+    }
+}
+
+// Task to run all tests
+task testAll {
+    dependsOn subprojects.collect { it.tasks.matching { task -> task.name == 'test' } }
+    description = 'Run all tests in all modules'
+    group = 'verification'
+}
+
+// Task to generate aggregated test report
+task jacocoAggregateReport(type: JacocoReport) {
+    dependsOn = subprojects.test
+    additionalSourceDirs.from(subprojects.sourceSets.main.allSource.srcDirs)
+    sourceDirectories.from(subprojects.sourceSets.main.allSource.srcDirs)
+    classDirectories.from(subprojects.sourceSets.main.output)
+    executionData.from(project.fileTree(dir: '.', include: '**/build/jacoco/test.exec'))
+    
+    reports {
+        html.required = true
+        xml.required = true
+        csv.required = false
+    }
+    
+    finalizedBy testCodeCoverageReport
+}
+

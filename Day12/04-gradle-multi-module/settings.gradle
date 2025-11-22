@@ -1,0 +1,17 @@
+rootProject.name = 'training-project'
+
+include 'training-common'
+include 'training-domain'
+include 'training-repository'
+include 'training-service'
+include 'training-web'
+include 'training-integration-tests'
+
+// Project structure customization
+project(':training-common').projectDir = file('modules/common')
+project(':training-domain').projectDir = file('modules/domain')
+project(':training-repository').projectDir = file('modules/repository')
+project(':training-service').projectDir = file('modules/service')
+project(':training-web').projectDir = file('modules/web')
+project(':training-integration-tests').projectDir = file('modules/integration-tests')
+

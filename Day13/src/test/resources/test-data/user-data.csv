@@ -1,0 +1,7 @@
+name,email,age,expectedStatus
+John Doe,john@example.com,25,ADULT
+Jane Smith,jane@example.com,16,MINOR
+Bob Johnson,bob@example.com,70,SENIOR
+Alice Brown,alice@example.com,30,ADULT
+Charlie Wilson,charlie@example.com,15,MINOR
+

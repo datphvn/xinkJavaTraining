@@ -1,0 +1,8 @@
+package com.xink.training.day13.service;
+
+public class AuditException extends RuntimeException {
+    public AuditException(String message) {
+        super(message);
+    }
+}
+

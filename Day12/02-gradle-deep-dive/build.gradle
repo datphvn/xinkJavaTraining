@@ -1,0 +1,293 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'jacoco'
+    id 'checkstyle'
+    id 'com.github.spotbugs' version '5.2.1'
+    id 'org.springframework.boot' version '3.2.0'
+    id 'io.spring.dependency-management' version '1.1.4'
+}
+
+// Project Information
+group = 'com.company.training'
+version = '1.0.0-SNAPSHOT'
+description = 'Java Training Project with Gradle'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+    withJavadocJar()
+    withSourcesJar()
+}
+
+// Source Sets Configuration
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main/java']
+        }
+        resources {
+            srcDirs = ['src/main/resources']
+        }
+    }
+    
+    test {
+        java {
+            srcDirs = ['src/test/java']
+        }
+        resources {
+            srcDirs = ['src/test/resources']
+        }
+    }
+    
+    integrationTest {
+        java {
+            srcDirs = ['src/integration-test/java']
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
+        }
+        resources {
+            srcDirs = ['src/integration-test/resources']
+        }
+    }
+}
+
+// Configurations
+configurations {
+    integrationTestImplementation.extendsFrom testImplementation
+    integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
+    
+    // Exclude conflicting dependencies
+    all {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+        exclude group: 'junit', module: 'junit'
+    }
+}
+
+// Repository Configuration
+repositories {
+    // Maven Central
+    mavenCentral()
+    
+    // Spring Repositories
+    maven {
+        name = "Spring Milestones"
+        url = "https://repo.spring.io/milestone"
+        mavenContent {
+            releasesOnly()
+        }
+    }
+    
+    // Local repository for testing
+    mavenLocal()
+}
+
+// Version Catalog for Dependency Management
+ext {
+    versions = [
+        junit         : '5.10.1',
+        mockito       : '5.7.0',
+        slf4j         : '2.0.9',
+        logback       : '1.4.14',
+        jackson       : '2.16.0',
+        spring        : '6.1.1',
+        hibernate     : '6.4.1.Final',
+        testcontainers: '1.19.3'
+    ]
+}
+
+// Dependencies
+dependencies {
+    // Spring Boot Starters
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    
+    // Logging (using Logback instead of default)
+    implementation 'org.springframework.boot:spring-boot-starter-log4j2'
+    
+    // Database
+    runtimeOnly 'com.h2database:h2'
+    runtimeOnly 'org.postgresql:postgresql'
+    
+    // Utilities
+    implementation "com.fasterxml.jackson.core:jackson-databind:${versions.jackson}"
+    implementation 'org.apache.commons:commons-lang3:3.14.0'
+    
+    // Development Tools
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    
+    // Test Dependencies
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation "org.junit.jupiter:junit-jupiter:${versions.junit}"
+    testImplementation "org.mockito:mockito-core:${versions.mockito}"
+    testImplementation "org.mockito:mockito-junit-jupiter:${versions.mockito}"
+    testImplementation 'org.assertj:assertj-core:3.24.2'
+    
+    // Integration Test Dependencies
+    integrationTestImplementation "org.testcontainers:junit-jupiter:${versions.testcontainers}"
+    integrationTestImplementation "org.testcontainers:postgresql:${versions.testcontainers}"
+    integrationTestImplementation 'io.rest-assured:rest-assured:5.4.0'
+    
+    // Static Analysis
+    checkstyle 'com.puppycrawl.tools:checkstyle:10.12.5'
+    spotbugs 'com.github.spotbugs:spotbugs:4.8.2'
+    spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.12.0'
+}
+
+// Application Configuration
+application {
+    mainClass = 'com.company.training.Application'
+    applicationDefaultJvmArgs = [
+        '-Dspring.profiles.active=development',
+        '-Xmx512m'
+    ]
+}
+
+// Task Configuration
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    options.compilerArgs += [
+        '-Xlint:all',
+        '-Xlint:-processing',
+        '-Werror',
+        '-parameters'
+    ]
+}
+
+tasks.withType(Test) {
+    useJUnitPlatform()
+    
+    // Test JVM configuration
+    maxHeapSize = '1G'
+    jvmArgs = [
+        '-XX:+UseG1GC',
+        '-XX:MaxGCPauseMillis=200'
+    ]
+    
+    // Test execution configuration
+    maxParallelForks = Runtime.runtime.availableProcessors()
+    forkEvery = 100
+    
+    // Test reporting
+    reports {
+        html.required = true
+        junitXml.required = true
+    }
+    
+    // Test event logging
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        exceptionFormat = 'full'
+        showExceptions true
+        showCauses true
+        showStackTraces true
+    }
+    
+    // System properties for tests
+    systemProperties = [
+        'spring.profiles.active': 'test',
+        'junit.jupiter.execution.parallel.enabled': 'true',
+        'junit.jupiter.execution.parallel.mode.default': 'concurrent'
+    ]
+}
+
+// Custom Tasks
+task unitTest(type: Test) {
+    description = 'Runs unit tests'
+    group = 'verification'
+    
+    useJUnitPlatform {
+        excludeTags 'integration'
+    }
+    
+    include '**/unit/**/*Test.class'
+    include '**/*UnitTest.class'
+}
+
+task integrationTest(type: Test) {
+    description = 'Runs integration tests'
+    group = 'verification'
+    
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    
+    useJUnitPlatform {
+        includeTags 'integration'
+    }
+    
+    shouldRunAfter test
+    
+    // Environment setup for integration tests
+    systemProperties = [
+        'spring.profiles.active': 'integration-test',
+        'testcontainers.reuse.enable': 'true'
+    ]
+}
+
+// Custom task for database migration
+task dbMigrate {
+    description = 'Run database migrations'
+    group = 'database'
+    
+    doLast {
+        println 'Running database migrations...'
+        // Add migration logic here
+    }
+}
+
+// Task to generate test data
+task generateTestData {
+    description = 'Generate test data for development'
+    group = 'development'
+    
+    doLast {
+        println 'Generating test data...'
+        javaexec {
+            classpath = sourceSets.main.runtimeClasspath
+            mainClass = 'com.company.training.util.TestDataGenerator'
+            args = ['--environment=development', '--count=1000']
+        }
+    }
+}
+
+// Performance testing task
+task performanceTest(type: Test) {
+    description = 'Runs performance tests'
+    group = 'verification'
+    
+    useJUnitPlatform {
+        includeTags 'performance'
+    }
+    
+    maxHeapSize = '2G'
+    jvmArgs = [
+        '-XX:+UseG1GC',
+        '-XX:+PrintGCDetails',
+        '-XX:+PrintGCTimeStamps'
+    ]
+    
+    reports {
+        html.outputLocation = file("$buildDir/reports/performance-tests")
+    }
+}
+
+// Task Dependencies và Ordering
+test.dependsOn unitTest
+integrationTest.dependsOn test
+check.dependsOn integrationTest
+
+build.finalizedBy jacocoTestReport
+jacocoTestReport.dependsOn test, integrationTest
+
+// Gradle Build Cache Configuration
+buildCache {
+    local {
+        enabled = true
+        directory = file("${rootDir}/.gradle/build-cache")
+        removeUnusedEntriesAfterDays = 30
+    }
+}
+
